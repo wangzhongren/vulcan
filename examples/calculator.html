@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculator</title>
+  <script src="/bridge.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .calc {
+      background: #0a0a0a;
+      border: 1px solid #222;
+      border-radius: 16px;
+      padding: 24px;
+      width: 320px;
+    }
+    .display {
+      background: #0f0f0f;
+      border: 1px solid #1a1a1a;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      text-align: right;
+      font-family: 'SF Mono', 'JetBrains Mono', monospace;
+      font-size: 32px;
+      color: #fff;
+      min-height: 72px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      overflow: hidden;
+      word-break: break-all;
+    }
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .key {
+      height: 56px;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.12s;
+      font-family: -apple-system, sans-serif;
+    }
+    .key:active { transform: scale(0.95); }
+
+    .key-num             { background: #1a1a1a; color: #fff; }
+    .key-num:hover       { background: #333; }
+
+    .key-op              { background: #222; color: #60a5fa; font-weight: 600; }
+    .key-op:hover        { background: #3b82f6; color: #fff; }
+
+    .key-eq              { background: #3b82f6; color: #fff; font-weight: 700; }
+    .key-eq:hover        { background: #2563eb; }
+
+    .key-cl              { background: #1a1a1a; color: #ef4444; }
+    .key-cl:hover        { background: #ef4444; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="calc">
+    <div class="display" id="display">0</div>
+    <div class="keys">
+      <button class="key key-cl" onclick="clearAll()">C</button>
+      <button class="key key-op" onclick="append('(')">(</button>
+      <button class="key key-op" onclick="append(')')">)</button>
+      <button class="key key-op" onclick="append('/')">/</button>
+
+      <button class="key key-num" onclick="append('7')">7</button>
+      <button class="key key-num" onclick="append('8')">8</button>
+      <button class="key key-num" onclick="append('9')">9</button>
+      <button class="key key-op" onclick="append('*')">×</button>
+
+      <button class="key key-num" onclick="append('4')">4</button>
+      <button class="key key-num" onclick="append('5')">5</button>
+      <button class="key key-num" onclick="append('6')">6</button>
+      <button class="key key-op" onclick="append('-')">−</button>
+
+      <button class="key key-num" onclick="append('1')">1</button>
+      <button class="key key-num" onclick="append('2')">2</button>
+      <button class="key key-num" onclick="append('3')">3</button>
+      <button class="key key-op" onclick="append('+')">+</button>
+
+      <button class="key key-op" onclick="append('.')">.</button>
+      <button class="key key-num" onclick="append('0')">0</button>
+      <button class="key key-cl" onclick="backspace()">⌫</button>
+      <button class="key key-eq" onclick="evaluate()">=</button>
+    </div>
+  </div>
+
+  <script>
+    var display = document.getElementById('display');
+    var expr = '';
+
+    function append(val) {
+      // If expression is empty and user types a digit/dot, replace (not append)
+      if (expr === '' && '0123456789.'.indexOf(val) !== -1) {
+        expr = val;
+      } else {
+        expr += val;
+      }
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      display.textContent = expr || '0';
+    }
+
+    function clearAll() {
+      expr = '';
+      updateDisplay();
+    }
+
+    function backspace() {
+      expr = expr.slice(0, -1);
+      updateDisplay();
+    }
+
+    function evaluate() {
+      try {
+        var sanitized = expr.replace(/×/g, '*').replace(/−/g, '-');
+        var result = Function('"use strict"; return (' + sanitized + ')')();
+        expr = Number.isFinite(result) ? String(result) : 'Error';
+        // Notify via Vulcan toast (works in shell or standalone)
+        if (window.Vulcan) Vulcan.toast('= ' + expr, 'success');
+      } catch (err) {
+        expr = 'Error';
+        if (window.Vulcan) Vulcan.toast('Invalid expression', 'error');
+      }
+      updateDisplay();
+    }
+  </script>
+</body>
+</html>
