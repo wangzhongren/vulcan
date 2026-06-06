@@ -65,6 +65,34 @@
       return request('/api/sys/allowed');
     },
 
+    // ── HTTP Proxy (bypass CORS) ──────────────────────────
+
+    /**
+     * Fetch an external URL through Vulcan's proxy, bypassing CORS.
+     *
+     * @example
+     *   const result = await Vulcan.fetch('https://api.example.com/data');
+     *   console.log(result.data);
+     *
+     *   const post = await Vulcan.fetch('https://api.example.com/submit', {
+     *     method: 'POST',
+     *     headers: { 'X-Custom': 'value' },
+     *     body: { key: 'value' }
+     *   });
+     */
+    fetch: function (url, options) {
+      if (!options) options = {};
+      return request('/api/proxy', {
+        method: 'POST',
+        body: {
+          url: url,
+          method: options.method || 'GET',
+          headers: options.headers || {},
+          body: options.body || null,
+        },
+      });
+    },
+
     // ── View Management ───────────────────────────────────
 
     deployView: function (name, html) {

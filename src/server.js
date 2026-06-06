@@ -9,6 +9,7 @@ const viewRoutes = require('./routes/views');
 const fsRoutes = require('./routes/fs');
 const sysRoutes = require('./routes/sys');
 const projectRoutes = require('./routes/project');
+const proxyRoutes = require('./routes/proxy');
 
 function openBrowser(url) {
   const platform = process.platform;
@@ -74,6 +75,7 @@ async function startServer(options = {}) {
   app.use('/api', fsRoutes);
   app.use('/api', sysRoutes);
   app.use('/api', projectRoutes);
+  app.use('/api', proxyRoutes);
 
   // Serve bridge.js
   app.get('/bridge.js', (req, res) => {
