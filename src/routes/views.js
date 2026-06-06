@@ -3,9 +3,30 @@
 const { Router } = require('express');
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
 const { VIEWS_DIR } = require('../config');
 
 const router = Router();
+
+/**
+ * Open a URL in the default browser.
+ */
+function openBrowser(url) {
+  const platform = process.platform;
+  try {
+    if (platform === 'darwin') {
+      spawn('open', [url], { stdio: 'ignore', detached: true }).unref();
+    } else if (platform === 'win32') {
+      spawn('cmd', ['/c', 'start', '', url], {
+        stdio: 'ignore', detached: true, windowsVerbatimArguments: true,
+      }).unref();
+    } else {
+      spawn('xdg-open', [url], { stdio: 'ignore', detached: true }).unref();
+    }
+  } catch {
+    // Silently ignore
+  }
+}
 
 /**
  * POST /api/view/deploy
@@ -40,12 +61,19 @@ router.post('/view/deploy', (req, res) => {
     fs.writeFileSync(filePath, content, 'utf-8');
 
     const url = `/view/${fileName}`;
+    const fullUrl = `http://localhost:${req.socket.localPort}${url}`;
     console.log(`  📄 View deployed: ${fileName}`);
+
+    // Auto-open in browser (can be disabled with open=false in request)
+    if (req.body.open !== false) {
+      openBrowser(fullUrl);
+      console.log(`  🌐 Opened in browser: ${fullUrl}`);
+    }
 
     res.json({
       success: true,
       url,
-      fullUrl: `http://localhost:${req.socket.localPort}${url}`,
+      fullUrl,
       name: safeName,
       file: filePath,
     });
