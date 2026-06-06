@@ -140,9 +140,31 @@ const output = await Vulcan.execute('git diff --stat');
 // 获取项目结构
 const tree = await Vulcan.getProjectTree(3);
 
+// 调用外部 API（绕过跨域限制）
+const res = await Vulcan.fetch('https://api.github.com/repos/wangzhongren/vulcan');
+console.log(res.data.stargazers_count);
+
 // 弹出通知
 Vulcan.toast('操作完成', 'success');
 ```
+
+### 跨域代理
+
+AI 生成的页面运行在 `localhost:3000`，直接调用外部 API 会因为跨域被浏览器拦截。Vulcan 提供内置代理：
+
+```javascript
+// GET 请求
+const res = await Vulcan.fetch('https://api.example.com/data');
+
+// POST 请求
+await Vulcan.fetch('https://api.example.com/submit', {
+  method: 'POST',
+  headers: { 'X-Custom': 'value' },
+  body: { key: 'value' }
+});
+```
+
+> 安全：禁止代理到 localhost / 127.0.0.1 / 内网地址，防止 SSRF。
 
 ## 命令参考
 
