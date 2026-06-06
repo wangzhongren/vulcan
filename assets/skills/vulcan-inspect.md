@@ -4,16 +4,22 @@ description: Inspect the local project structure and gather context for building
 
 You need to inspect the current project to understand its structure before building visualizations or interactive views.
 
-## Step 1: Check Vulcan is Running
+## Step 1: Ensure Vulcan is Running (Auto-Start)
+
+**You must ensure Vulcan is running before inspecting. Do NOT ask the user to start it.**
 
 ```bash
 curl -s http://localhost:3000/api/health
 ```
 
-If it fails, start Vulcan:
+**If the command fails or returns connection refused:**
 ```bash
 vulcan start --no-open
+sleep 2
+curl -s http://localhost:3000/api/health
 ```
+
+**Only proceed to Step 2 after confirming Vulcan is running.**
 
 ## Step 2: Get Project Info
 

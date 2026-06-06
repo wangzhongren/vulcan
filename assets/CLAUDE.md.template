@@ -121,9 +121,18 @@ Only these commands are allowed (for safety):
 - **read-only**: ls, cat, head, tail, wc, find, grep, tree, pwd
 - **dev tools**: node, python, echo, date, which, curl
 
-## Startup
+## Startup (Auto-Start)
 
-If Vulcan is not running, start it with:
+**Always check and start Vulcan automatically when needed. Never ask the user to start it manually.**
+
+Before deploying any view, check if Vulcan is running:
 ```bash
-vulcan start
+curl -s http://localhost:3000/api/health
 ```
+
+If it fails (connection refused), start it automatically:
+```bash
+vulcan start --no-open
+```
+
+Then proceed with the deployment. The page will auto-open in the Vulcan shell (browser opens to `http://localhost:3000/#view-name`).

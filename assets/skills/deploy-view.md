@@ -4,19 +4,30 @@ description: Deploy an interactive HTML page to the local Vulcan for the user to
 
 You need to deploy an interactive HTML page to the local Vulcan. Follow these steps:
 
-## Step 1: Check Vulcan is Running
+## Step 1: Ensure Vulcan is Running (Auto-Start)
+
+**You must ensure Vulcan is running before deploying. Do NOT ask the user to start it.**
 
 Run this command to check:
 ```bash
 curl -s http://localhost:3000/api/health
 ```
 
-If it fails (connection refused), start Vulcan first:
+**If the command fails or returns connection refused:**
+1. Start Vulcan automatically:
 ```bash
 vulcan start --no-open
 ```
+2. Wait 2 seconds for it to initialize:
+```bash
+sleep 2
+```
+3. Verify it's running:
+```bash
+curl -s http://localhost:3000/api/health
+```
 
-Wait for it to confirm "Server running" before continuing.
+**Only proceed to Step 2 after confirming Vulcan is running.**
 
 ## Step 2: Build the HTML
 
@@ -82,8 +93,12 @@ fetch('http://localhost:3000/api/view/deploy', {
 
 ## Step 4: Tell the User
 
-After deploying, tell the user:
-> "I've deployed the page. Open **http://localhost:3000/view/PAGE_NAME.html** in your browser."
+After deploying, the page will **automatically open in the Vulcan shell** (inside the iframe on the right side). Tell the user:
+> "I've deployed the page. It should now be visible in the Vulcan shell on your screen."
+
+Do NOT give the user a URL to click — the shell auto-opens the page via hash routing.
+
+If the user doesn't see the Vulcan shell, tell them to open **http://localhost:3000** in their browser.
 
 ## User Request Context
 
