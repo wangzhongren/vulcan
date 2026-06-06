@@ -71,6 +71,159 @@ Claude Code 会自动：
 4. 告诉你打开 URL 查看
 5. 你在网页点击"Apply"按钮完成修改
 
+## 🔌 Claude Code 集成详解
+
+Vulcan 通过**三层机制**与 Claude Code 深度集成，让 AI 能够自主使用可视化能力：
+
+### 1. Claude Code Skills（斜杠命令）
+
+`vulcan init` 会在项目或全局安装两个 Skill 文件：
+
+```
+.claude/commands/
+├── deploy-view.md      # /deploy-view 命令定义
+└── vulcan-inspect.md   # /vulcan-inspect 命令定义
+```
+
+**项目级安装**（只在当前项目生效）：
+```bash
+cd your-project
+vulcan init
+```
+
+**全局安装**（所有项目可用）：
+```bash
+vulcan init --global
+```
+
+安装后，Claude Code 会识别这些 Skill，你可以：
+- **手动调用**：`/deploy-view a dashboard showing API metrics`
+- **自然语言**：Claude Code 会根据上下文自动选择合适的 Skill
+
+### 2. CLAUDE.md 自动发现配置
+
+`vulcan init` 还会在项目根目录创建 `CLAUDE.md`，这是 Claude Code 的项目级配置文件。当 Claude Code 启动时会自动读取，知道：
+
+- **何时使用**：需要可视化时（diff 对比、数据图表、交互预览等）
+- **如何调用**：API 地址、请求格式、Bridge API 用法
+- **安全规则**：命令白名单、文件操作权限
+- **最佳实践**：HTML 模板规范、样式建议
+
+`CLAUDE.md` 示例内容：
+```markdown
+# Vulcan — AI Agent Instructions
+
+## When to Use
+Deploy a page whenever you need to:
+- Show a diff comparison for code review
+- Visualize data, charts, or dashboards
+- Build interactive UI for refactoring previews
+- Present complex information visually
+
+## How to Deploy
+POST to http://localhost:3000/api/view/deploy
+{
+  "name": "page_name",
+  "html": "<!DOCTYPE html>..."
+}
+
+## Bridge API (window.Vulcan)
+await Vulcan.readFile(path)
+await Vulcan.writeFile(path, content)
+await Vulcan.execute(cmd, args?)
+Vulcan.toast(msg, type)
+```
+
+有了 `CLAUDE.md`，你甚至不需要手动调用 Skill，Claude Code 会自动判断何时需要可视化。
+
+### 3. 完整工作流示例
+
+#### 场景 A：代码重构预览
+
+**用户输入**：
+```
+帮我重构 auth.js 里的登录逻辑，先让我看看改动
+```
+
+**Claude Code 自动执行**：
+1. 读取 `CLAUDE.md`，知道有 Vulcan 可用
+2. 读取 `auth.js` 原文件
+3. 生成重构后的代码
+4. 调用 `/deploy-view` Skill（或直接用 API）
+5. 部署 Diff 对比页面到 `http://localhost:3000/view/refactor_preview.html`
+6. 回复用户："打开 http://localhost:3000/view/refactor_preview.html 查看对比"
+
+**用户在网页上操作**：
+- 查看左右对比（Before / After）
+- 点击「Apply Changes」按钮
+- 网页调用 `Vulcan.writeFile('./auth.js', newCode)`
+- 文件自动更新，Claude Code 提示"修改已应用"
+
+#### 场景 B：依赖关系可视化
+
+**用户输入**：
+```
+分析一下这个项目的模块依赖
+```
+
+**Claude Code 自动执行**：
+1. 读取 `package.json` 和源码
+2. 分析模块关系
+3. 调用 `/deploy-view` 部署 ECharts 图表
+4. 生成可交互的依赖关系图
+5. 用户点击节点可查看详情、高亮关联模块
+
+#### 场景 C：Git 提交审查
+
+**用户输入**：
+```
+review 一下最近的 5 个提交
+```
+
+**Claude Code 自动执行**：
+1. 执行 `git log -5` 获取提交记录
+2. 读取每个提交的 diff
+3. 部署审查 Dashboard，包含：
+   - 提交列表（可点击展开）
+   - 代码变更高亮显示
+   - 「Approve」/「Request Changes」按钮
+   - 一键生成 Review 报告
+
+### 4. 集成检查清单
+
+确保 Claude Code 集成正常工作：
+
+```bash
+# 1. Vulcan 服务正在运行
+vulcan status
+# 或 vulcan start
+
+# 2. Skills 已安装（二选一）
+ls .claude/commands/          # 项目级
+ls ~/.claude/commands/        # 全局
+
+# 3. CLAUDE.md 存在（项目级）
+ls CLAUDE.md
+```
+
+### 5. 调试技巧
+
+**Skill 没被识别？**
+- 检查文件是否在正确位置：`.claude/commands/deploy-view.md`
+- 重启 Claude Code 让它重新加载 Skills
+
+**Claude Code 没自动使用 Vulcan？**
+- 确认 `CLAUDE.md` 存在且包含 Vulcan 配置
+- 在提示中明确说"用可视化展示"或"部署一个页面"
+
+**API 调用失败？**
+- 检查 Vulcan 服务是否启动：`vulcan status`
+- 检查端口是否被占用：`vulcan start --port 8080`
+
+**Bridge API 不工作？**
+- 确认 HTML 的 `<head>` 中包含了 `<script src="/bridge.js"></script>`
+- 在浏览器控制台检查：`window.Vulcan` 是否存在
+
 ## 📖 命令参考
 
 ### CLI 命令
