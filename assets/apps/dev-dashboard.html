@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dev Dashboard</title>
+  <script src="/bridge.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 32px;
+    }
+
+    .dashboard {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+
+    .header-badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      background: rgba(34, 197, 94, 0.1);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    .project-path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #555;
+    }
+
+    /* Grid Layout */
+    .grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* Card */
+    .card {
+      background: #111;
+      border: 1px solid #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title-icon {
+      width: 16px;
+      height: 16px;
+      color: #555;
+    }
+
+    .card-body {
+      padding: 16px 20px;
+    }
+
+    .card-body.scroll {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    /* File Tree */
+    .tree-item {
+      padding: 6px 8px;
+      margin: 1px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #888;
+      transition: all 0.12s;
+    }
+
+    .tree-item:hover {
+      background: #1a1a1a;
+      color: #ddd;
+    }
+
+    .tree-item.active {
+      background: rgba(59, 130, 246, 0.1);
+      color: #60a5fa;
+    }
+
+    .tree-item.folder { color: #aaa; font-weight: 500; }
+
+    .tree-icon {
+      font-size: 14px;
+      width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .tree-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tree-children {
+      padding-left: 16px;
+      border-left: 1px solid #1a1a1a;
+      margin-left: 9px;
+    }
+
+    /* Git Status */
+    .git-branch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .branch-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #60a5fa;
+      background: rgba(59, 130, 246, 0.1);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .git-stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .git-stat {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .git-stat-num {
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .git-stat-num.added { color: #22c55e; }
+    .git-stat-num.modified { color: #f59e0b; }
+    .git-stat-num.deleted { color: #ef4444; }
+
+    .commit-list {
+      list-style: none;
+    }
+
+    .commit-item {
+      padding: 10px 0;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .commit-item:last-child { border-bottom: none; }
+
+    .commit-msg {
+      font-size: 13px;
+      color: #ddd;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .commit-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #555;
+      display: flex;
+      gap: 12px;
+    }
+
+    /* File Viewer */
+    .file-viewer {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      background: #0a0a0a;
+      border-radius: 8px;
+      overflow: auto;
+      max-height: 460px;
+    }
+
+    .file-viewer-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: #0a0a0a;
+      z-index: 1;
+    }
+
+    .file-path {
+      font-size: 11px;
+      color: #666;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-size {
+      font-size: 10px;
+      color: #444;
+    }
+
+    .file-content {
+      padding: 16px;
+      white-space: pre;
+      color: #bbb;
+      overflow-x: auto;
+      tab-size: 2;
+    }
+
+    .file-placeholder {
+      padding: 60px 20px;
+      text-align: center;
+      color: #333;
+      font-size: 13px;
+    }
+
+    /* Quick Actions */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .action-btn {
+      padding: 16px;
+      background: #0a0a0a;
+      border: 1px solid #1a1a1a;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+    }
+
+    .action-btn:hover {
+      border-color: #333;
+      background: #111;
+      transform: translateY(-1px);
+    }
+
+    .action-btn:active {
+      transform: translateY(0);
+    }
+
+    .action-icon {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .action-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #ccc;
+      margin-bottom: 2px;
+    }
+
+    .action-desc {
+      font-size: 11px;
+      color: #555;
+    }
+
+    /* Output */
+    .output-panel {
+      margin-top: 24px;
+    }
+
+    .output-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .output-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .output-clear {
+      font-size: 11px;
+      color: #555;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.12s;
+    }
+
+    .output-clear:hover {
+      color: #888;
+      background: #1a1a1a;
+    }
+
+    .output-box {
+      background: #111;
+      border: 1px solid #1a1a1a;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      padding: 16px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #aaa;
+      min-height: 100px;
+    }
+
+    .output-box:empty::before {
+      content: '// output will appear here...';
+      color: #333;
+    }
+
+    .output-line {
+      margin-bottom: 4px;
+    }
+
+    .output-line.cmd {
+      color: #60a5fa;
+    }
+
+    .output-line.success {
+      color: #22c55e;
+    }
+
+    .output-line.error {
+      color: #ef4444;
+    }
+
+    .output-line.info {
+      color: #888;
+    }
+
+    /* Loading */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: #444;
+      font-size: 13px;
+      gap: 8px;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #222;
+      border-top-color: #555;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #333; }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <h1>Dev Dashboard</h1>
+        <span class="header-badge" id="statusBadge">Loading...</span>
+      </div>
+      <div class="project-path" id="projectPath">-</div>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid">
+
+      <!-- Left Column: File Tree -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">
+            <svg class="card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Explorer
+          </span>
+        </div>
+        <div class="card-body scroll" id="fileTree">
+          <div class="loading"><div class="spinner"></div>Loading...</div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- Quick Actions -->
+        <div class="actions-grid">
+          <div class="action-btn" onclick="runGitStatus()">
+            <div class="action-icon">🔀</div>
+            <div class="action-label">Git Status</div>
+            <div class="action-desc">Working tree changes</div>
+          </div>
+          <div class="action-btn" onclick="runGitLog()">
+            <div class="action-icon">📜</div>
+            <div class="action-label">Recent Commits</div>
+            <div class="action-desc">Last 10 commits</div>
+          </div>
+          <div class="action-btn" onclick="runGitDiff()">
+            <div class="action-icon">📊</div>
+            <div class="action-label">Git Diff</div>
+            <div class="action-desc">Unstaged changes</div>
+          </div>
+          <div class="action-btn" onclick="runNpmTest()">
+            <div class="action-icon">🧪</div>
+            <div class="action-label">Run Tests</div>
+            <div class="action-desc">npm test</div>
+          </div>
+          <div class="action-btn" onclick="runProjectInfo()">
+            <div class="action-icon">📦</div>
+            <div class="action-label">Project Info</div>
+            <div class="action-desc">Metadata & deps</div>
+          </div>
+          <div class="action-btn" onclick="runDateCmd()">
+            <div class="action-icon">⏱</div>
+            <div class="action-label">System Time</div>
+            <div class="action-desc">Current timestamp</div>
+          </div>
+        </div>
+
+        <!-- File Viewer -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg class="card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              File Viewer
+            </span>
+            <span class="file-size" id="fileSize"></span>
+          </div>
+          <div id="fileViewer">
+            <div class="file-placeholder">Click a file in the tree to view its contents</div>
+          </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="output-panel">
+          <div class="output-header">
+            <span class="output-title">Terminal Output</span>
+            <button class="output-clear" onclick="clearOutput()">Clear</button>
+          </div>
+          <div class="output-box" id="outputBox"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const outputBox = document.getElementById('outputBox');
+
+    function log(text, type) {
+      const line = document.createElement('div');
+      line.className = 'output-line' + (type ? ' ' + type : '');
+      line.textContent = text;
+      outputBox.appendChild(line);
+      outputBox.scrollTop = outputBox.scrollHeight;
+    }
+
+    function clearOutput() {
+      outputBox.innerHTML = '';
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    // ── File Tree ────────────────────────────────────────
+
+    function renderTree(node, depth) {
+      if (!depth) depth = 0;
+      let html = '';
+
+      if (node.children) {
+        for (var i = 0; i < node.children.length; i++) {
+          var child = node.children[i];
+          var isDir = child.type === 'directory';
+          var indent = depth * 1;
+
+          html += '<div class="tree-item ' + (isDir ? 'folder' : '') + '" ';
+          html += 'data-path="' + (child.name) + '" ';
+          html += 'data-type="' + child.type + '" ';
+          html += 'onclick="handleTreeClick(this, \'' + child.name.replace(/'/g, "\\'") + '\', ' + isDir + ')">';
+          html += '<span class="tree-icon">' + (isDir ? '📁' : getFileIcon(child.name)) + '</span>';
+          html += '<span class="tree-name">' + child.name + '</span>';
+          html += '</div>';
+
+          if (isDir && child.children && depth < 3) {
+            html += '<div class="tree-children">';
+            html += renderTree(child, depth + 1);
+            html += '</div>';
+          }
+        }
+      }
+
+      return html;
+    }
+
+    function getFileIcon(name) {
+      var ext = name.split('.').pop().toLowerCase();
+      var icons = {
+        'js': '📜', 'ts': '🔷', 'tsx': '⚛️', 'jsx': '⚛️',
+        'json': '📋', 'md': '📝', 'html': '🌐', 'css': '🎨',
+        'py': '🐍', 'go': '🔵', 'rs': '🦀', 'java': '☕',
+        'sh': '⚡', 'yml': '⚙️', 'yaml': '⚙️', 'toml': '⚙️',
+        'png': '🖼', 'jpg': '🖼', 'svg': '🖼', 'gif': '🖼',
+        'lock': '🔒', 'env': '🔑', 'gitignore': '👁',
+      };
+      return icons[ext] || '📄';
+    }
+
+    var currentPath = '';
+
+    function handleTreeClick(el, name, isDir) {
+      if (!isDir) {
+        // Build full path
+        var parts = [];
+        var current = el;
+        while (current) {
+          if (current.classList && current.classList.contains('tree-item')) {
+            parts.unshift(current.querySelector('.tree-name').textContent);
+          }
+          current = current.parentElement;
+          if (current && current.id === 'fileTree') break;
+        }
+        var path = './' + parts.join('/');
+        viewFile(path, name);
+      }
+    }
+
+    async function loadFileTree() {
+      try {
+        var result = await Vulcan.getProjectTree(3);
+        if (result.success) {
+          var el = document.getElementById('fileTree');
+          el.innerHTML = renderTree(result.tree);
+          document.getElementById('projectPath').textContent = result.root;
+          document.getElementById('statusBadge').textContent = 'Connected';
+          document.getElementById('statusBadge').style.color = '#22c55e';
+          document.getElementById('statusBadge').style.borderColor = 'rgba(34, 197, 94, 0.2)';
+          document.getElementById('statusBadge').style.background = 'rgba(34, 197, 94, 0.1)';
+        }
+      } catch (err) {
+        log('Failed to load tree: ' + err.message, 'error');
+      }
+    }
+
+    // ── File Viewer ──────────────────────────────────────
+
+    async function viewFile(path, name) {
+      var viewer = document.getElementById('fileViewer');
+      viewer.innerHTML = '<div class="loading"><div class="spinner"></div>Loading ' + name + '...</div>';
+
+      try {
+        var result = await Vulcan.readFile(path);
+        if (result.success) {
+          document.getElementById('fileSize').textContent = formatSize(result.size);
+
+          var html = '<div class="file-viewer">';
+          html += '<div class="file-viewer-header">';
+          html += '<span class="file-path">' + result.path + '</span>';
+          html += '<span class="file-size">' + formatSize(result.size) + '</span>';
+          html += '</div>';
+          html += '<div class="file-content">' + escapeHtml(result.content) + '</div>';
+          html += '</div>';
+
+          viewer.innerHTML = html;
+          log('Opened: ' + path, 'info');
+        } else {
+          viewer.innerHTML = '<div class="file-placeholder">Could not read file: ' + (result.error || 'Unknown error') + '</div>';
+        }
+      } catch (err) {
+        viewer.innerHTML = '<div class="file-placeholder">Error: ' + err.message + '</div>';
+        log('Error reading ' + path + ': ' + err.message, 'error');
+      }
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── Quick Actions ────────────────────────────────────
+
+    async function runCmd(label, cmd, args) {
+      log('$ ' + cmd + (args ? ' ' + args.join(' ') : ''), 'cmd');
+
+      try {
+        var result = await Vulcan.execute(cmd, args || []);
+        if (result.success) {
+          if (result.stdout) log(result.stdout.trim());
+          log('✓ exit code 0', 'success');
+        } else {
+          if (result.stdout) log(result.stdout.trim());
+          if (result.stderr) log(result.stderr.trim(), 'error');
+          log('✗ exit code ' + result.exitCode, 'error');
+        }
+        Vulcan.toast(label + ' completed', result.success ? 'success' : 'error');
+        return result;
+      } catch (err) {
+        log('Error: ' + err.message, 'error');
+        Vulcan.toast(label + ' failed', 'error');
+      }
+    }
+
+    function runGitStatus() {
+      runCmd('Git Status', 'git status', []);
+    }
+
+    async function runGitLog() {
+      log('$ git log --oneline -10', 'cmd');
+      try {
+        var result = await Vulcan.execute('git log', ['--oneline', '-10']);
+        if (result.success && result.stdout) {
+          log(result.stdout.trim());
+          log('✓ exit code 0', 'success');
+        }
+        Vulcan.toast('Git log loaded', 'success');
+      } catch (err) {
+        log('Error: ' + err.message, 'error');
+      }
+    }
+
+    function runGitDiff() {
+      runCmd('Git Diff', 'git diff', ['--stat']);
+    }
+
+    function runNpmTest() {
+      runCmd('NPM Test', 'npm test', []);
+    }
+
+    async function runProjectInfo() {
+      log('Fetching project info...', 'cmd');
+      try {
+        var result = await Vulcan.getProjectInfo();
+        if (result.success) {
+          log('Project: ' + result.projectName);
+          log('CWD: ' + result.cwd);
+          log('Indicators:');
+          for (var key in result.indicators) {
+            log('  ' + key + ': ' + (result.indicators[key] ? '✓' : '✗'), result.indicators[key] ? 'success' : 'info');
+          }
+          if (result.packageJson) {
+            var pkg = result.packageJson;
+            log('\npackage.json:');
+            log('  name: ' + (pkg.name || '-'));
+            log('  version: ' + (pkg.version || '-'));
+            log('  description: ' + (pkg.description || '-'));
+            if (pkg.dependencies) {
+              var deps = Object.keys(pkg.dependencies);
+              log('  dependencies: ' + deps.length + ' packages');
+            }
+          }
+          Vulcan.toast('Project info loaded', 'success');
+        }
+      } catch (err) {
+        log('Error: ' + err.message, 'error');
+      }
+    }
+
+    function runDateCmd() {
+      runCmd('Date', 'date', []);
+    }
+
+    // ── Init ─────────────────────────────────────────────
+
+    loadFileTree();
+    log('Dev Dashboard initialized', 'info');
+    log('Vulcan Bridge v' + Vulcan.version + ' ready\n', 'success');
+  </script>
+</body>
+</html>
