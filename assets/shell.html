@@ -462,9 +462,18 @@
       }
     });
 
+    // Handle hash on initial load
     if (window.location.hash) {
       loadView(window.location.hash.slice(1));
     }
+
+    // Handle hash changes (e.g., when a new view is deployed via openBrowser)
+    window.addEventListener('hashchange', () => {
+      const name = window.location.hash.slice(1);
+      if (name && name !== currentView) {
+        loadView(name);
+      }
+    });
 
     loadViews();
     setInterval(loadViews, 2000);

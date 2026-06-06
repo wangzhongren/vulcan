@@ -62,12 +62,14 @@ router.post('/view/deploy', (req, res) => {
 
     const url = `/view/${fileName}`;
     const fullUrl = `http://localhost:${req.socket.localPort}${url}`;
+    // Shell URL: opens inside the shell iframe via hash routing
+    const shellUrl = `http://localhost:${req.socket.localPort}/#${safeName}`;
     console.log(`  📄 View deployed: ${fileName}`);
 
-    // Auto-open in browser (can be disabled with open=false in request)
+    // Auto-open in shell (can be disabled with open=false in request)
     if (req.body.open !== false) {
-      openBrowser(fullUrl);
-      console.log(`  🌐 Opened in browser: ${fullUrl}`);
+      openBrowser(shellUrl);
+      console.log(`  🌐 Opened in shell: ${shellUrl}`);
     }
 
     res.json({
