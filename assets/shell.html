@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vulcan</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+      height: 100vh;
+      overflow: hidden;
+      background: #000000;
+      color: #e0e0e0;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar - Pure Black Geek Style */
+    .sidebar {
+      width: 280px;
+      background: #0a0a0a;
+      border-right: 1px solid #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    /* Subtle scanline effect */
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 255, 100, 0.01) 2px,
+        rgba(0, 255, 100, 0.01) 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .sidebar-header {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid #1a1a1a;
+      position: relative;
+      z-index: 2;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #00ff64;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-shadow: 0 0 10px rgba(0, 255, 100, 0.3);
+    }
+
+    .logo-prefix {
+      color: #666;
+      font-weight: 400;
+    }
+
+    .version {
+      font-size: 11px;
+      color: #444;
+      margin-top: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Server Status */
+    .status-section {
+      padding: 16px 20px;
+      border-bottom: 1px solid #1a1a1a;
+      position: relative;
+      z-index: 2;
+    }
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 12px;
+    }
+
+    .status-label {
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 10px;
+    }
+
+    .status-value {
+      color: #00ff64;
+      font-weight: 600;
+      text-shadow: 0 0 8px rgba(0, 255, 100, 0.2);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border: 1px solid #00ff64;
+      border-radius: 2px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #00ff64;
+      background: rgba(0, 255, 100, 0.05);
+    }
+
+    .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #00ff64;
+      box-shadow: 0 0 6px #00ff64;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 6px #00ff64; }
+      50% { opacity: 0.4; box-shadow: 0 0 2px #00ff64; }
+    }
+
+    /* Views List */
+    .views-section {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .views-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .views-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .views-count {
+      font-size: 10px;
+      color: #00ff64;
+      background: rgba(0, 255, 100, 0.1);
+      padding: 2px 8px;
+      border: 1px solid #1a1a1a;
+      font-weight: 700;
+    }
+
+    .view-item {
+      padding: 10px 12px;
+      margin-bottom: 4px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 12px;
+      color: #888;
+      position: relative;
+      background: #0f0f0f;
+    }
+
+    .view-item::before {
+      content: '>';
+      position: absolute;
+      left: -12px;
+      color: #333;
+      transition: all 0.15s;
+    }
+
+    .view-item:hover {
+      background: #141414;
+      border-color: #1a1a1a;
+      color: #ccc;
+    }
+
+    .view-item:hover::before {
+      color: #00ff64;
+      left: -10px;
+    }
+
+    .view-item.active {
+      background: #0a1a0a;
+      border-color: #00ff64;
+      color: #00ff64;
+      box-shadow: 0 0 10px rgba(0, 255, 100, 0.1);
+    }
+
+    .view-item.active::before {
+      content: '▶';
+      color: #00ff64;
+      left: -12px;
+      text-shadow: 0 0 6px #00ff64;
+    }
+
+    .view-item-name {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #333;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .empty-state-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+      opacity: 0.3;
+    }
+
+    /* Footer */
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #1a1a1a;
+      font-size: 10px;
+      color: #444;
+      position: relative;
+      z-index: 2;
+    }
+
+    .footer-link {
+      color: #00ff64;
+      text-decoration: none;
+      border-bottom: 1px dashed #00ff64;
+      transition: all 0.15s;
+    }
+
+    .footer-link:hover {
+      color: #fff;
+      border-color: #fff;
+      text-shadow: 0 0 8px #00ff64;
+    }
+
+    .footer-code {
+      background: #0a0a0a;
+      border: 1px solid #1a1a1a;
+      padding: 2px 6px;
+      border-radius: 2px;
+      color: #00ff64;
+      font-size: 10px;
+    }
+
+    /* Content Area */
+    .content {
+      flex: 1;
+      position: relative;
+      background: #000000;
+    }
+
+    .content iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+    }
+
+    .welcome-screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: #333;
+      background: #000000;
+    }
+
+    .welcome-ascii {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      color: #00ff64;
+      text-align: center;
+      margin-bottom: 24px;
+      opacity: 0.4;
+      text-shadow: 0 0 10px rgba(0, 255, 100, 0.3);
+      white-space: pre;
+      line-height: 1.2;
+    }
+
+    .welcome-text {
+      font-size: 16px;
+      color: #555;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .welcome-hint {
+      font-size: 12px;
+      color: #333;
+      letter-spacing: 0.5px;
+    }
+
+    .cursor-blink {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      background: #00ff64;
+      animation: blink 1s step-end infinite;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    /* Scrollbar styling */
+    .views-section::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .views-section::-webkit-scrollbar-track {
+      background: #0a0a0a;
+    }
+
+    .views-section::-webkit-scrollbar-thumb {
+      background: #1a1a1a;
+      border-radius: 3px;
+    }
+
+    .views-section::-webkit-scrollbar-thumb:hover {
+      background: #00ff64;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-prefix">$</span> vulcan
+        </div>
+        <div class="version">v0.1.0 // forge ui with ai</div>
+      </div>
+
+      <div class="status-section">
+        <div class="status-item">
+          <span class="status-label">STATUS</span>
+          <span class="status-badge">
+            <span class="status-dot"></span>
+            ONLINE
+          </span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">UPTIME</span>
+          <span class="status-value" id="uptime">00:00:00</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">PORT</span>
+          <span class="status-value">:3000</span>
+        </div>
+      </div>
+
+      <div class="views-section">
+        <div class="views-header">
+          <span class="views-title">// VIEWS</span>
+          <span class="views-count" id="viewsCount">0</span>
+        </div>
+        <div id="viewsList">
+          <div class="empty-state">
+            <div class="empty-state-icon">⚡</div>
+            <div>NO VIEWS DEPLOYED</div>
+            <div style="margin-top: 8px; color: #222;">await Vulcan.deployView()</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div style="margin-bottom: 8px;">
+          <a href="http://localhost:3000/api/health" target="_blank" class="footer-link">/api/health</a>
+        </div>
+        <div>bridge: <code class="footer-code">window.Vulcan</code></div>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content">
+      <iframe id="contentFrame" src=""></iframe>
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-ascii">
+██╗   ██╗██╗   ██╗██╗      █████╗ ███╗   ██╗ ██████╗
+██║   ██║██║   ██║██║     ██╔══██╗████╗  ██║██╔════╝
+██║   ██║██║   ██║██║     ███████║██╔██╗ ██║██║
+╚██╗ ██╔╝██║   ██║██║     ██╔══██║██║╚██╗██║██║
+ ╚████╔╝ ╚██████╔╝███████╗██║  ██║██║ ╚████║╚██████╗
+  ╚═══╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝
+        </div>
+        <div class="welcome-text">SYSTEM READY<span class="cursor-blink"></span></div>
+        <div class="welcome-hint">deploy a view to begin</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const frame = document.getElementById('contentFrame');
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const viewsList = document.getElementById('viewsList');
+    const viewsCount = document.getElementById('viewsCount');
+    const uptimeEl = document.getElementById('uptime');
+
+    let currentView = null;
+    let startTime = Date.now();
+
+    // Format uptime as HH:MM:SS
+    function formatUptime(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      return [
+        String(hours).padStart(2, '0'),
+        String(minutes).padStart(2, '0'),
+        String(seconds).padStart(2, '0')
+      ].join(':');
+    }
+
+    // Update uptime every second
+    setInterval(() => {
+      uptimeEl.textContent = formatUptime(Date.now() - startTime);
+    }, 1000);
+
+    // Load views list
+    async function loadViews() {
+      try {
+        const res = await fetch('/api/view/list');
+        const data = await res.json();
+        const views = data.views.filter(v => v.name !== 'index');
+
+        viewsCount.textContent = views.length;
+
+        if (views.length === 0) {
+          viewsList.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">⚡</div>
+              <div>NO VIEWS DEPLOYED</div>
+              <div style="margin-top: 8px; color: #222;">await Vulcan.deployView()</div>
+            </div>
+          `;
+          return;
+        }
+
+        viewsList.innerHTML = views.map(v => `
+          <div class="view-item ${currentView === v.name ? 'active' : ''}" data-view="${v.name}">
+            <span class="view-item-name">${v.name}</span>
+          </div>
+        `).join('');
+
+        // Click handlers
+        viewsList.querySelectorAll('.view-item').forEach(el => {
+          el.addEventListener('click', () => {
+            const viewName = el.dataset.view;
+            loadView(viewName);
+          });
+        });
+
+        // Auto-load first view if none selected
+        if (!currentView && views.length > 0) {
+          loadView(views[0].name);
+        }
+      } catch (err) {
+        console.error('Failed to load views:', err);
+      }
+    }
+
+    // Load a view in iframe
+    function loadView(name) {
+      currentView = name;
+      frame.src = `/view/${name}.html`;
+      welcomeScreen.style.display = 'none';
+
+      // Update active state
+      viewsList.querySelectorAll('.view-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.view === name);
+      });
+
+      // Update URL hash
+      window.location.hash = name;
+    }
+
+    // Listen for messages from iframe
+    window.addEventListener('message', (e) => {
+      if (e.data.type === 'vulcan:refresh') {
+        loadViews();
+      } else if (e.data.type === 'vulcan:view-deployed') {
+        // Refresh sidebar and switch to the newly deployed view
+        loadViews().then(() => {
+          if (e.data.name) {
+            loadView(e.data.name);
+          }
+        });
+      }
+    });
+
+    // Check hash on load
+    if (window.location.hash) {
+      const viewName = window.location.hash.slice(1);
+      loadView(viewName);
+    }
+
+    // Initial load
+    loadViews();
+
+    // Refresh views every 2 seconds
+    setInterval(loadViews, 2000);
+  </script>
+</body>
+</html>

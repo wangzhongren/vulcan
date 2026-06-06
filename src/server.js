@@ -80,16 +80,16 @@ async function startServer(options = {}) {
     res.sendFile(path.join(__dirname, '..', 'assets', 'bridge.js'));
   });
 
+  // Serve shell.html as root
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'assets', 'shell.html'));
+  });
+
   // Serve built-in libraries at /lib/*
   app.use('/lib', express.static(LIB_DIR));
 
   // Serve views
   app.use('/view', express.static(VIEWS_DIR));
-
-  // Root redirect
-  app.get('/', (req, res) => {
-    res.redirect('/view/index.html');
-  });
 
   // Health check
   app.get('/api/health', (req, res) => {

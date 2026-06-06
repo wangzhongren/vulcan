@@ -71,6 +71,16 @@
       return request('/api/view/deploy', {
         method: 'POST',
         body: { name: name, html: html },
+      }).then(function (result) {
+        // Notify parent window (shell) to refresh sidebar and switch to new view
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'vulcan:view-deployed',
+            name: result.name,
+            url: result.url
+          }, '*');
+        }
+        return result;
       });
     },
 
