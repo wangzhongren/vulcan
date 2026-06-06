@@ -1,0 +1,28 @@
+{
+  "name": "vulcan",
+  "version": "0.1.0",
+  "description": "AI-driven local real-time UI canvas - forge interactive apps with AI",
+  "bin": {
+    "vulcan": "./bin/vulcan.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js",
+    "dev": "node bin/vulcan.js start",
+    "test": "node test/smoke.js"
+  },
+  "keywords": ["ai", "canvas", "claude-code", "ui", "interactive", "visualization"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "assets/",
+    "scripts/"
+  ]
+}

@@ -1,0 +1,129 @@
+# Vulcan — AI Agent Instructions
+
+This project has a **Vulcan** running locally. You can deploy interactive HTML pages to it for the user to interact with in their browser.
+
+## When to Use
+
+Deploy a page whenever you need to:
+- Show a diff comparison for the user to review before applying
+- Visualize data, charts, or dashboards
+- Build an interactive UI for code review, refactoring previews, or file browsers
+- Present complex information that benefits from a visual layout
+- Let the user click a button to confirm/apply changes
+
+## How to Deploy
+
+Use `curl` or `fetch` to POST to `http://localhost:3000/api/view/deploy`:
+
+```bash
+curl -X POST http://localhost:3000/api/view/deploy \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my_page", "html": "<!DOCTYPE html><html>...</html>"}'
+```
+
+The server responds with the URL: `http://localhost:3000/view/my_page.html`
+
+Then tell the user to open that URL in their browser.
+
+## HTML Template Rules
+
+1. **Always include bridge.js** in `<head>`:
+```html
+<script src="/bridge.js"></script>
+```
+
+2. **Use local libraries ONLY** (no external CDNs):
+```html
+<script src="/lib/tailwind.min.js"></script>    <!-- Tailwind CSS -->
+<script src="/lib/echarts.min.js"></script>     <!-- ECharts -->
+<script src="/lib/g6.min.js"></script>          <!-- AntV G6 -->
+```
+
+3. **Single-file HTML** — all CSS and JS must be inline.
+
+4. **Design** — use Tailwind CSS utility classes. Make it clean, modern, responsive.
+
+## Bridge API (window.Vulcan)
+
+The bridge.js script injects a `window.Vulcan` object into every page. The page's JS can call:
+
+| Method | Description | Example |
+|--------|-------------|---------|
+| `Vulcan.readFile(path)` | Read a local file | `await Vulcan.readFile('./src/app.ts')` |
+| `Vulcan.writeFile(path, content)` | Write to a local file | `await Vulcan.writeFile('./utils.js', newCode)` |
+| `Vulcan.execute(cmd, args?)` | Run a whitelisted shell command | `await Vulcan.execute('git status')` |
+| `Vulcan.getProjectTree(depth?)` | Get project directory tree | `await Vulcan.getProjectTree(3)` |
+| `Vulcan.getProjectInfo()` | Get project metadata | `await Vulcan.getProjectInfo()` |
+| `Vulcan.toast(msg, type)` | Show notification (success/error/info) | `Vulcan.toast('Saved!', 'success')` |
+| `Vulcan.deployView(name, html)` | Deploy another page | `await Vulcan.deployView('detail', html)` |
+
+## Example: Diff View with One-Click Apply
+
+```javascript
+const html = `<!DOCTYPE html>
+<html>
+<head>
+  <script src="/bridge.js"></script>
+  <script src="/lib/tailwind.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-6 font-mono">
+  <h1 class="text-2xl font-bold mb-4">Refactor Preview</h1>
+  <div class="grid grid-cols-2 gap-4 mb-6">
+    <div>
+      <h2 class="text-red-400 mb-2">Before</h2>
+      <pre class="bg-red-900/20 p-4 rounded text-sm overflow-x-auto">OLD_CODE_HERE</pre>
+    </div>
+    <div>
+      <h2 class="text-green-400 mb-2">After</h2>
+      <pre class="bg-green-900/20 p-4 rounded text-sm overflow-x-auto">NEW_CODE_HERE</pre>
+    </div>
+  </div>
+  <button onclick="apply()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-semibold">
+    Apply Changes
+  </button>
+  <script>
+    async function apply() {
+      var newCode = \\\`NEW_CODE_HERE\\\`;
+      await Vulcan.writeFile('./target.js', newCode);
+      Vulcan.toast('Changes applied!', 'success');
+      document.querySelector('button').textContent = 'Applied!';
+      document.querySelector('button').disabled = true;
+    }
+  <\/script>
+</body>
+</html>`;
+
+await fetch('http://localhost:3000/api/view/deploy', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ name: 'refactor_preview', html })
+});
+// Tell user: "Open http://localhost:3000/view/refactor_preview.html to review and apply."
+```
+
+## Other Useful API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/view/list` | GET | List all deployed pages |
+| `/api/fs/read` | POST `{path}` | Read a local file |
+| `/api/fs/write` | POST `{path, content}` | Write a local file |
+| `/api/sys/exec` | POST `{cmd, args?}` | Execute whitelisted command |
+| `/api/project/tree` | GET | Get project directory tree |
+| `/api/project/info` | GET | Get project metadata |
+| `/api/health` | GET | Check server status |
+
+## Command Whitelist for /api/sys/exec
+
+Only these commands are allowed (for safety):
+- **git**: status, diff, log, branch, show, tag, remote, add, checkout
+- **npm/yarn/pnpm**: run, test, lint, build, start
+- **read-only**: ls, cat, head, tail, wc, find, grep, tree, pwd
+- **dev tools**: node, python, echo, date, which, curl
+
+## Startup
+
+If Vulcan is not running, start it with:
+```bash
+vulcan start
+```

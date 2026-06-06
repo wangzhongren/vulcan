@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vulcan - Dashboard</title>
+  <script src="/bridge.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', ui-monospace, monospace;
+      background: #0f172a; color: #e2e8f0; min-height: 100vh; line-height: 1.6;
+    }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+    .header { text-align: center; margin-bottom: 48px; }
+    .header h1 {
+      font-size: 2rem; font-weight: 700;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 8px;
+    }
+    .header .subtitle { color: #94a3b8; font-size: 0.9rem; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border-radius: 999px; font-size: 0.8rem;
+      font-weight: 600; margin-top: 16px;
+    }
+    .status-badge.online {
+      background: rgba(16,185,129,0.15); color: #34d399;
+      border: 1px solid rgba(16,185,129,0.3);
+    }
+    .status-badge .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #34d399; animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .card {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 12px; padding: 24px; margin-bottom: 20px;
+    }
+    .card h2 {
+      font-size: 1rem; font-weight: 600; color: #f1f5f9;
+      margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid #334155; font-size: 0.85rem;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row .label { color: #94a3b8; }
+    .info-row .value { color: #e2e8f0; font-weight: 500; }
+    .info-row .value.path {
+      color: #93c5fd; font-size: 0.8rem;
+      max-width: 400px; overflow: hidden; text-overflow: ellipsis;
+    }
+    .lib-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .lib-card {
+      background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+      padding: 16px; text-align: center; font-size: 0.85rem;
+      transition: border-color 0.2s;
+    }
+    .lib-card:hover { border-color: #60a5fa; }
+    .lib-card .lib-name { font-weight: 600; margin-bottom: 4px; }
+    .lib-card .lib-path { color: #64748b; font-size: 0.75rem; }
+    .lib-card .lib-status { margin-top: 8px; font-size: 0.75rem; }
+    .lib-card .lib-status.ok { color: #34d399; }
+    .lib-card .lib-status.missing { color: #f87171; }
+    .btn-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 16px; border-radius: 8px; border: 1px solid #334155;
+      background: #0f172a; color: #e2e8f0; font-family: inherit;
+      font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+    }
+    .btn:hover { border-color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .btn:active { transform: scale(0.98); }
+    .output {
+      background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+      padding: 16px; margin-top: 16px; font-size: 0.8rem;
+      max-height: 200px; overflow-y: auto; white-space: pre-wrap;
+      word-break: break-all; display: none;
+    }
+    .output.visible { display: block; }
+    .output .log-line { margin-bottom: 4px; }
+    .output .log-line.success { color: #34d399; }
+    .output .log-line.error { color: #f87171; }
+    .output .log-line.info { color: #93c5fd; }
+    .api-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; }
+    .api-table th {
+      text-align: left; padding: 8px 12px; color: #94a3b8;
+      font-weight: 500; border-bottom: 1px solid #334155;
+    }
+    .api-table td { padding: 8px 12px; border-bottom: 1px solid rgba(51,65,85,0.5); }
+    .api-table code {
+      background: rgba(96,165,250,0.1); color: #93c5fd;
+      padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;
+    }
+    .views-list { list-style: none; }
+    .views-list li {
+      padding: 8px 0; border-bottom: 1px solid #334155; font-size: 0.85rem;
+    }
+    .views-list li:last-child { border-bottom: none; }
+    .views-list a { color: #60a5fa; text-decoration: none; }
+    .views-list a:hover { text-decoration: underline; }
+    .views-list .view-meta { color: #64748b; font-size: 0.75rem; margin-top: 2px; }
+    .empty-state { text-align: center; padding: 24px; color: #64748b; font-size: 0.85rem; }
+    .footer { text-align: center; margin-top: 48px; color: #475569; font-size: 0.75rem; }
+    @media (max-width: 600px) {
+      .lib-grid { grid-template-columns: 1fr; }
+      .btn-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <h1>Vulcan</h1>
+      <div class="subtitle">AI-Driven Local UI Canvas - MVP</div>
+      <div class="status-badge online" id="statusBadge">
+        <span class="dot"></span>
+        <span>Server Online</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Server Status</h2>
+      <div class="info-row">
+        <span class="label">Status</span>
+        <span class="value" id="infoStatus">Checking...</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Port</span>
+        <span class="value" id="infoPort">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Uptime</span>
+        <span class="value" id="infoUptime">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Views Directory</span>
+        <span class="value path" id="infoViewsDir">-</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Bundled Libraries</h2>
+      <div class="lib-grid">
+        <div class="lib-card">
+          <div class="lib-name">Tailwind CSS</div>
+          <div class="lib-path">/lib/tailwind.min.js</div>
+          <div class="lib-status" id="libTailwind">Checking...</div>
+        </div>
+        <div class="lib-card">
+          <div class="lib-name">ECharts</div>
+          <div class="lib-path">/lib/echarts.min.js</div>
+          <div class="lib-status" id="libEcharts">Checking...</div>
+        </div>
+        <div class="lib-card">
+          <div class="lib-name">AntV G6</div>
+          <div class="lib-path">/lib/g6.min.js</div>
+          <div class="lib-status" id="libG6">Checking...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Interactive API Tests</h2>
+      <div class="btn-grid">
+        <button class="btn" onclick="testWriteFile()">Write test.txt</button>
+        <button class="btn" onclick="testReadFile()">Read test.txt</button>
+        <button class="btn" onclick="testExec()">Run git status</button>
+        <button class="btn" onclick="testProjectTree()">Project Tree</button>
+        <button class="btn" onclick="testDeployDemo()">Deploy Demo Page</button>
+        <button class="btn" onclick="testListViews()">List All Views</button>
+      </div>
+      <div class="output" id="output"></div>
+    </div>
+
+    <div class="card">
+      <h2>Deployed Views</h2>
+      <ul class="views-list" id="viewsList">
+        <li class="empty-state">Loading...</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Bridge.js API Reference</h2>
+      <table class="api-table">
+        <thead>
+          <tr><th>Method</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Vulcan.readFile(path)</code></td>
+            <td>Read a local file</td>
+          </tr>
+          <tr>
+            <td><code>Vulcan.writeFile(path, content)</code></td>
+            <td>Write to a local file</td>
+          </tr>
+          <tr>
+            <td><code>Vulcan.execute(cmd, args?)</code></td>
+            <td>Execute a whitelisted shell command</td>
+          </tr>
+          <tr>
+            <td><code>Vulcan.deployView(name, html)</code></td>
+            <td>Deploy an HTML page</td>
+          </tr>
+          <tr>
+            <td><code>Vulcan.getProjectTree(depth?)</code></td>
+            <td>Get project directory tree</td>
+          </tr>
+          <tr>
+            <td><code>Vulcan.getProjectInfo()</code></td>
+            <td>Get project metadata</td>
+          </tr>
+          <tr>
+            <td><code>Vulcan.toast(msg, type)</code></td>
+            <td>Show a notification toast</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">Vulcan v0.1.0 - AI-Driven Local UI Canvas</div>
+  </div>
+
+  <script>
+    var outputEl = document.getElementById('output');
+
+    function log(message, type) {
+      if (!type) type = 'info';
+      outputEl.classList.add('visible');
+      var line = document.createElement('div');
+      line.className = 'log-line ' + type;
+      line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + message;
+      outputEl.appendChild(line);
+      outputEl.scrollTop = outputEl.scrollHeight;
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + 'B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
+      return (bytes / 1024 / 1024).toFixed(1) + 'MB';
+    }
+
+    function formatUptime(seconds) {
+      var m = Math.floor(seconds / 60);
+      var s = Math.floor(seconds % 60);
+      if (m > 60) {
+        var h = Math.floor(m / 60);
+        return h + 'h ' + (m % 60) + 'm ' + s + 's';
+      }
+      return m + 'm ' + s + 's';
+    }
+
+    async function loadHealth() {
+      try {
+        var data = await Vulcan.ping();
+        document.getElementById('infoStatus').textContent = 'Running';
+        document.getElementById('infoPort').textContent = data.port;
+        document.getElementById('infoUptime').textContent = formatUptime(data.uptime);
+        document.getElementById('infoViewsDir').textContent = data.viewsDir;
+      } catch (err) {
+        document.getElementById('infoStatus').textContent = 'Error';
+      }
+    }
+
+    async function checkLibraries() {
+      var libs = [
+        { id: 'libTailwind', path: '/lib/tailwind.min.js' },
+        { id: 'libEcharts', path: '/lib/echarts.min.js' },
+        { id: 'libG6', path: '/lib/g6.min.js' }
+      ];
+      for (var i = 0; i < libs.length; i++) {
+        var el = document.getElementById(libs[i].id);
+        try {
+          var res = await fetch(libs[i].path, { method: 'HEAD' });
+          if (res.ok) {
+            el.textContent = 'Available';
+            el.className = 'lib-status ok';
+          } else {
+            el.textContent = 'Not found';
+            el.className = 'lib-status missing';
+          }
+        } catch (e) {
+          el.textContent = 'Not found';
+          el.className = 'lib-status missing';
+        }
+      }
+    }
+
+    async function loadViews() {
+      try {
+        var data = await Vulcan.listViews();
+        var list = document.getElementById('viewsList');
+        if (!data.views || data.views.length === 0) {
+          list.innerHTML = '<li class="empty-state">No views deployed yet.</li>';
+          return;
+        }
+        var html = '';
+        for (var i = 0; i < data.views.length; i++) {
+          var v = data.views[i];
+          if (v.name === 'index') continue;
+          html += '<li><a href="' + v.url + '" target="_blank">' + v.name + '.html</a>' +
+            '<div class="view-meta">' + formatBytes(v.size) + '</div></li>';
+        }
+        list.innerHTML = html || '<li class="empty-state">No custom views deployed.</li>';
+      } catch (err) {
+        document.getElementById('viewsList').innerHTML =
+          '<li class="empty-state">Failed to load.</li>';
+      }
+    }
+
+    async function testWriteFile() {
+      log('Writing test.txt...');
+      try {
+        var r = await Vulcan.writeFile('./test.txt',
+          'Hello from Vulcan!\nWritten at: ' + new Date().toISOString() + '\n');
+        log('File written: ' + r.path + ' (' + formatBytes(r.size) + ')', 'success');
+        Vulcan.toast('test.txt written!', 'success');
+      } catch (err) {
+        log('Write failed: ' + err.message, 'error');
+      }
+    }
+
+    async function testReadFile() {
+      log('Reading test.txt...');
+      try {
+        var r = await Vulcan.readFile('./test.txt');
+        if (r.success) {
+          log('File read: ' + r.path, 'success');
+          log('Content:\n' + r.content, 'info');
+        } else {
+          log(r.error, 'error');
+        }
+      } catch (err) {
+        log('Read failed: ' + err.message, 'error');
+      }
+    }
+
+    async function testExec() {
+      log('Executing: git status...');
+      try {
+        var r = await Vulcan.execute('git status');
+        if (r.success) {
+          log('Command succeeded (exit ' + r.exitCode + ')', 'success');
+          log(r.stdout, 'info');
+        } else {
+          log('Exit code ' + r.exitCode, 'error');
+          if (r.stderr) log(r.stderr, 'error');
+        }
+      } catch (err) {
+        log('Exec failed: ' + err.message, 'error');
+      }
+    }
+
+    async function testProjectTree() {
+      log('Fetching project tree...');
+      try {
+        var r = await Vulcan.getProjectTree(2);
+        if (r.success) {
+          log('Project root: ' + r.root, 'success');
+          var children = r.tree.children || [];
+          for (var i = 0; i < children.length; i++) {
+            var icon = children[i].type === 'directory' ? 'DIR' : 'FILE';
+            log('  ' + icon + ' ' + children[i].name, 'info');
+          }
+        }
+      } catch (err) {
+        log('Tree failed: ' + err.message, 'error');
+      }
+    }
+
+    async function testDeployDemo() {
+      log('Deploying demo page...');
+      try {
+        var demoHtml = [
+          '<!DOCTYPE html><html><head>',
+          '<scr' + 'ipt src="/bridge.js"><\/scr' + 'ipt>',
+          '<style>',
+          'body{font-family:system-ui;background:#0f172a;color:#e2e8f0;',
+          'display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}',
+          '.card{background:#1e293b;border:1px solid #334155;border-radius:16px;',
+          'padding:48px;text-align:center;max-width:500px}',
+          'h1{font-size:2rem;margin-bottom:12px}',
+          'p{color:#94a3b8;margin-bottom:24px}',
+          '.btn{background:#3b82f6;color:white;border:none;padding:12px 24px;',
+          'border-radius:8px;font-size:1rem;cursor:pointer;margin:4px}',
+          '.btn:hover{background:#2563eb}',
+          '.sec{background:#334155}',
+          '.sec:hover{background:#475569}',
+          'pre{background:#0f172a;border:1px solid #334155;border-radius:8px;',
+          'padding:16px;text-align:left;font-size:.8rem;margin-top:20px}',
+          '</style></head><body>',
+          '<div class="card">',
+          '<h1>It Works!</h1>',
+          '<p>Dynamically deployed by Vulcan.</p>',
+          '<button class="btn" onclick="tw()">Write File</button>',
+          '<button class="btn sec" onclick="tc()">Run Command</button>',
+          '<pre id="out">Click a button...</pre>',
+          '</div>',
+          '<scr' + 'ipt>',
+          'async function tw(){',
+          'var r=await Vulcan.writeFile("./demo.txt","Hello! "+new Date().toISOString());',
+          'document.getElementById("out").textContent=JSON.stringify(r,null,2);',
+          'Vulcan.toast("File written!","success")}',
+          'async function tc(){',
+          'var r=await Vulcan.execute("date");',
+          'document.getElementById("out").textContent=r.stdout||r.error;',
+          'Vulcan.toast("Executed!","info")}',
+          '<\/scr' + 'ipt></body></html>'
+        ].join('');
+
+        var result = await Vulcan.deployView('demo', demoHtml);
+        log('Demo deployed: ' + result.fullUrl, 'success');
+        window.open(result.url, '_blank');
+        Vulcan.toast('Demo deployed!', 'success');
+        loadViews();
+      } catch (err) {
+        log('Deploy failed: ' + err.message, 'error');
+      }
+    }
+
+    async function testListViews() {
+      log('Listing views...');
+      try {
+        var data = await Vulcan.listViews();
+        log('Found ' + data.views.length + ' view(s):', 'success');
+        for (var i = 0; i < data.views.length; i++) {
+          log('  ' + data.views[i].name + '.html (' + formatBytes(data.views[i].size) + ')', 'info');
+        }
+      } catch (err) {
+        log('List failed: ' + err.message, 'error');
+      }
+    }
+
+    loadHealth();
+    checkLibraries();
+    loadViews();
+    setInterval(loadHealth, 30000);
+  </script>
+</body>
+</html>
