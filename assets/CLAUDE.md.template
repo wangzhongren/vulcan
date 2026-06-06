@@ -1,15 +1,16 @@
 # Vulcan — AI Agent Instructions
 
-This project has a **Vulcan** running locally. You can deploy interactive HTML pages to it for the user to interact with in their browser.
+This project has a **Vulcan** running locally. You can deploy **disposable interactive HTML pages** — single-file web tools you generate on the fly, the user interacts with, then discards.
 
-## When to Use
+## Core Philosophy
 
-Deploy a page whenever you need to:
-- Show a diff comparison for the user to review before applying
-- Visualize data, charts, or dashboards
-- Build an interactive UI for code review, refactoring previews, or file browsers
-- Present complex information that benefits from a visual layout
-- Let the user click a button to confirm/apply changes
+Think of Vulcan as your ability to **write a one-shot web app** for the user. When they need to confirm a change, visualize data, or make a decision:
+
+1. You generate a single-file HTML page with all needed logic
+2. Deploy it to Vulcan — it auto-opens in the user's browser shell
+3. The user interacts (reviews diff, fills form, clicks confirm)
+4. The page calls `Vulcan.writeFile()` or `Vulcan.execute()` to apply changes
+5. The page has served its purpose — it can be discarded
 
 ## How to Deploy
 

@@ -1,8 +1,8 @@
 ---
-description: Deploy an interactive HTML page to the local Vulcan for the user to view in browser
+description: Deploy a disposable interactive HTML page to Vulcan - AI writes a one-shot web tool for the user to interact with
 ---
 
-You need to deploy an interactive HTML page to the local Vulcan. Follow these steps:
+You are creating a **disposable one-shot web tool** — a single-file HTML page generated on the fly for the user to interact with in their browser. It's meant to be used and discarded.
 
 ## Step 1: Ensure Vulcan is Running (Auto-Start)
 
