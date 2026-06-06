@@ -32,6 +32,7 @@ cd your-project
 vulcan init          # 当前项目
 # 或
 vulcan init --global # 所有项目
+
 ```
 
 这会安装 `/deploy-view` 和 `/vulcan-inspect` 两个 Skill。
@@ -105,6 +106,22 @@ async function save() {
 > AI 渲染项目目录树，点文件名直接看源码语法高亮。
 
 > 💡 这些工具全部是 AI **现场生成**的单文件 HTML，不存在提前开发。
+
+## 示例
+
+仓库 `examples/` 目录下有可直接部署的一次性工具模板：
+
+| 文件 | 说明 |
+|------|------|
+| [`calculator.html`](examples/calculator.html) | 极简深色计算器 |
+
+部署方式（在 Claude Code 里说一句话就行）：
+```
+帮我部署一个计算器
+```
+
+>
+> AI 会现场生成并部署到 Vulcan，浏览器自动弹出。
 
 ## Bridge API
 
